@@ -1,14 +1,14 @@
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d')
+const score = document.getElementById('score');
 
 canvas.width = document.body.clientWidth;
 canvas.height = document.body.clientHeight;
 
 canvas.addEventListener("touchstart", handleStart, false);
 
-ctx.fillStyle = 'blue';
+ctx.fillStyle = '#96A537';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
-
 const screenWidth = window.innerWidth;
 const screenHeight = window.innerHeight;
 const blockCount = 5;
@@ -17,17 +17,27 @@ const heightCount = Math.floor(screenHeight / blockWidth);
 
 console.log(heightCount);
 
-let timestep = 1000 / 60;
-let offset = 0;
-let lastFrameTimeMs = new Date().getTime();
-let downSpeed = blockWidth*2; // Pixels/sec
+const timestep = 1000 / 60;
+const startSpeed = blockWidth*2;
+let offset;
+let lastFrameTimeMs;
+let downSpeed;
 let delta = 0;
 let gameOver = false;
 
-const blocks = [{x: 0, y: 0},{x: 2, y: 0},{x: 4, y: 0},{x: 1, y: 1},];
-const maxY = {};
+const blocks = [];
 
-mainLoop();
+startGame();
+
+function startGame() {
+  blocks.length = 0;
+  offset = 0;
+  lastFrameTimeMs = new Date().getTime();
+  downSpeed = startSpeed; // Pixels/sec
+  delta = 0;
+  gameOver = false;
+  mainLoop();
+}
 
 function mainLoop() {
 	let timestamp = new Date().getTime();
@@ -38,6 +48,7 @@ function mainLoop() {
 		delta -= timestep;
 	}
 	drawBlocks(blocks, offset);
+  score.innerHTML = "Score: " + Math.floor((downSpeed - startSpeed)*10);
 	if (!gameOver) {
 		requestAnimationFrame(mainLoop);
 	}
@@ -81,10 +92,10 @@ function spawnNewRow() {
 }
 
 function drawBlocks(blocks, offset) {
-	ctx.fillStyle = 'blue';
+	ctx.fillStyle = '#96A537';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	ctx.fillStyle = 'red';
+	ctx.fillStyle = '#475300';
 	for (let b of blocks) {
 		ctx.fillRect(b.x * blockWidth, (b.y - 1)*blockWidth + offset, blockWidth, blockWidth);
 	}
@@ -126,7 +137,6 @@ function clearRow(y) {
       blocks.splice(i, 1);
     }
   }
-  console.log(blocks.length);
 }
 
 function bumpRows(y) {
