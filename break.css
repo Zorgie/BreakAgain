@@ -1,0 +1,10 @@
+.menu {
+  display: flex;
+  justify-content: space-between;
+  background: #c0cf67;
+  font-size: x-large;
+}
+
+.button {
+  font-size: x-large;
+}
