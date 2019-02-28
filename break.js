@@ -20,7 +20,7 @@ console.log(heightCount);
 let timestep = 1000 / 60;
 let offset = 0;
 let lastFrameTimeMs = new Date().getTime();
-let downSpeed = blockWidth*5; // Pixels/sec
+let downSpeed = blockWidth*2; // Pixels/sec
 let delta = 0;
 let gameOver = false;
 
