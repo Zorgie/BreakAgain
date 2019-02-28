@@ -20,7 +20,7 @@ console.log(heightCount);
 let timestep = 1000 / 60;
 let offset = 0;
 let lastFrameTimeMs = new Date().getTime();
-let downSpeed = blockWidth; // Pixels/sec
+let downSpeed = blockWidth*2; // Pixels/sec
 let delta = 0;
 let gameOver = false;
 
@@ -113,6 +113,8 @@ function checkForFullRows() {
       clearRow(b.y);
       bumpRows(b.y + 1);
       checkForFullRows();
+	    downSpeed*=1.05;
+	
       return;
     }
   }
