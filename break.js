@@ -1,6 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d')
-const score = document.getElementById('score');
+const scoreField = document.getElementById('score');
+const highScoreField = document.getElementById('highScore');
 
 canvas.width = document.body.clientWidth;
 canvas.height = document.body.clientHeight;
@@ -15,7 +16,6 @@ const blockCount = 5;
 const blockWidth = screenWidth / blockCount;
 const heightCount = Math.floor(screenHeight / blockWidth);
 
-console.log(heightCount);
 
 const timestep = 1000 / 60;
 const startSpeed = blockWidth*2;
@@ -23,10 +23,14 @@ let offset;
 let lastFrameTimeMs;
 let downSpeed;
 let delta = 0;
+let score;
+let highScore;
 let gameOver = false;
+let tapToRestart;
 
 const blocks = [];
 
+loadHighScore();
 startGame();
 
 function startGame() {
@@ -36,6 +40,8 @@ function startGame() {
   downSpeed = startSpeed; // Pixels/sec
   delta = 0;
   gameOver = false;
+  score = 0;
+  tapToRestart = false;
   mainLoop();
 }
 
@@ -47,11 +53,13 @@ function mainLoop() {
 		update(timestep, blocks);
 		delta -= timestep;
 	}
+  if (gameOver) {
+    return;
+  }
 	drawBlocks(blocks, offset);
-  score.innerHTML = "Score: " + Math.floor((downSpeed - startSpeed)*10);
-	if (!gameOver) {
-		requestAnimationFrame(mainLoop);
-	}
+  scoreField.innerHTML = "Score: " + score;
+  highScoreField.innerHTML = "High score: " + highScore;
+	requestAnimationFrame(mainLoop);
 }
 
 function update(delta, blocks) {
@@ -77,10 +85,30 @@ function bumpBlocks(blocks) {
 	for (let b of blocks) {
 		b.y += 1;
 		if (b.y > heightCount) {
-			console.log("Game over");
 			gameOver = true;
 		}
 	}
+	if (gameOver) {
+  	maybeSaveHighScore();
+  	displaySplash();
+  	delay(500).then(() => {tapToRestart = true; displaySplash();});
+	}
+}
+
+function displaySplash() {
+  ctx.font = "50px Arial";
+	ctx.fillStyle = '#ECF8A5';
+  ctx.textAlign = "center";
+  ctx.fillText("Game Over", canvas.width/2, canvas.height/2 - 60);
+  ctx.fillText("Score: " + score, canvas.width/2, canvas.height/2);
+  if (tapToRestart) {
+  ctx.font = "30px Arial";
+    ctx.fillText("Tap to restart", canvas.width/2, canvas.height/2 + 60);
+  }
+}
+
+function delay(delay) {
+  return new Promise(resolve => setTimeout(resolve, delay));
 }
 
 function spawnNewRow() {
@@ -103,13 +131,18 @@ function drawBlocks(blocks, offset) {
 
 function handleStart(evt) {
   evt.preventDefault();
-  var touches = evt.changedTouches;
-  for (var i = 0; i < touches.length; i++) {
-    const x = columnFromCoordinate(touches[i].pageX);
-    const y = findMaxY(x);
-    blocks.push({x: x, y: y+1});
-    checkForFullRows();
-	}
+  if (!gameOver) {
+    var touches = evt.changedTouches;
+    for (var i = 0; i < touches.length; i++) {
+      const x = columnFromCoordinate(touches[i].pageX);
+      const y = findMaxY(x);
+      blocks.push({x: x, y: y+1});
+      checkForFullRows();
+  	}
+  }
+  if (tapToRestart) {
+    startGame();
+  }
 }
 
 function checkForFullRows() {
@@ -125,13 +158,13 @@ function checkForFullRows() {
       bumpRows(b.y + 1);
       checkForFullRows();
       downSpeed*=1.01;
+      score = Math.floor((downSpeed - startSpeed)*10);
       return;
     }
   }
 }
 
 function clearRow(y) {
-  console.log(blocks.length);
   for (let i = blocks.length-1; i>=0; i--) {
     if (blocks[i].y == y) {
       blocks.splice(i, 1);
@@ -164,4 +197,21 @@ function shuffle(a) {
         a[j] = x;
     }
     return a;
+}
+
+function loadHighScore() {
+  var hs = window.localStorage.getItem('breakHighScore');
+  if (hs != null) {
+    highScore = hs;
+  } else {
+    highScore = 0;
+  }
+}
+
+function maybeSaveHighScore() {
+  var hs = window.localStorage.getItem('breakHighScore');
+  if (hs == null || score > hs) {
+    highScore = score;
+    window.localStorage.setItem('breakHighScore', highScore);
+  }
 }
