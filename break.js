@@ -113,8 +113,7 @@ function checkForFullRows() {
       clearRow(b.y);
       bumpRows(b.y + 1);
       checkForFullRows();
-	    downSpeed*=1.05;
-	
+      downSpeed*=1.05;
       return;
     }
   }
