@@ -31,6 +31,7 @@ let tapToRestart;
 const blocks = [];
 
 loadHighScore();
+loadPlayerName();
 startGame();
 
 function startGame() {
@@ -97,7 +98,7 @@ function bumpBlocks(blocks) {
 
 function displaySplash() {
   ctx.font = "50px Arial";
-	ctx.fillStyle = '#ECF8A5';
+  ctx.fillStyle = '#ECF8A5';
   ctx.textAlign = "center";
   ctx.fillText("Game Over", canvas.width/2, canvas.height/2 - 60);
   ctx.fillText("Score: " + score, canvas.width/2, canvas.height/2);
@@ -208,10 +209,29 @@ function loadHighScore() {
   }
 }
 
+function loadPlayerName() {
+	var pn = window.localStorage.getItem('breakPlayerName');
+	if (pn != null) {
+		playerName = pn;
+	} else {
+		playerName = prompt("Please enter your name");
+		window.localStorage.setItem('breakPlayerName', playerName);
+	}
+}
+
 function maybeSaveHighScore() {
   var hs = window.localStorage.getItem('breakHighScore');
   if (hs == null || score > hs) {
     highScore = score;
     window.localStorage.setItem('breakHighScore', highScore);
   }
+  postScore();
+}
+
+function postScore() {
+	if (playerName) {
+    	xhr = new XMLHttpRequest();
+    	xhr.open('GET', 'https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZwaU6NpjZIdh41PPbayMD8rjP/exec' + "?name="+playerName+"&score="+score, true);
+		xhr.send();
+	}
 }
