@@ -6,7 +6,8 @@ const highScoreField = document.getElementById('highScore');
 canvas.width = document.body.clientWidth;
 canvas.height = document.body.clientHeight;
 
-canvas.addEventListener("touchstart", handleStart, false);
+canvas.addEventListener("touchstart", handleTouch, false);
+canvas.addEventListener("mousedown", handleMouseClick, false);
 
 ctx.fillStyle = '#96A537';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -130,20 +131,30 @@ function drawBlocks(blocks, offset) {
 	}
 }
 
-function handleStart(evt) {
-  evt.preventDefault();
-  if (!gameOver) {
-    var touches = evt.changedTouches;
+function handleTouch(evt) {
+  	evt.preventDefault();
+	var touches = evt.changedTouches;
     for (var i = 0; i < touches.length; i++) {
-      const x = columnFromCoordinate(touches[i].pageX);
-      const y = findMaxY(x);
-      blocks.push({x: x, y: y+1});
-      checkForFullRows();
+    	handleClick(touches[i].pageX);
   	}
-  }
-  if (tapToRestart) {
-    startGame();
-  }
+}
+
+function handleMouseClick(evt) {
+  evt.preventDefault();
+  handleClick(evt.x);	
+}
+
+function handleClick(x) {
+	if (!gameOver) {
+		const col = columnFromCoordinate(x);
+		const y = findMaxY(col);
+		blocks.push({x: col, y: y+1});
+		checkForFullRows();
+	}
+	if (tapToRestart) {
+		startGame();
+	}
+
 }
 
 function checkForFullRows() {
