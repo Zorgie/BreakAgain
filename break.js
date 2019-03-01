@@ -229,7 +229,7 @@ function maybeSaveHighScore() {
 }
 
 function postScore() {
-	if (playerName) {
+	if (playerName && score > 0) {
     	xhr = new XMLHttpRequest();
     	xhr.open('GET', 'https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZwaU6NpjZIdh41PPbayMD8rjP/exec' + "?name="+playerName+"&score="+score, true);
 		xhr.send();
