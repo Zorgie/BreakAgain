@@ -12,6 +12,10 @@ const url = "https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZ
 xhr.open("GET", url);
 xhr.send();
 
+const difficultyField = document.getElementById('difficulty');
+let difficulty = 3;
+loadDifficulty();
+
 let init = false;
 
 xhr.onreadystatechange = e => {
@@ -44,4 +48,32 @@ function changeName() {
 		playerName = prompt("Please enter your name");
 	}
 	window.localStorage.setItem('breakPlayerName', playerName);
+}
+
+function loadDifficulty() {
+	var diff = parseInt(window.localStorage.getItem('breakDifficulty'), 10);
+	if (diff != null) {
+		difficulty = diff;
+	} else {
+		difficulty = 3;
+	}
+	setDifficulty(difficulty);
+}
+
+function lowerDifficulty() {
+	if (difficulty > 1) {
+		setDifficulty(difficulty - 1);
+	}
+}
+
+function raiseDifficulty() {
+	if (difficulty < 5) {
+		setDifficulty(difficulty + 1);
+	}
+}
+
+function setDifficulty(newDiff) {
+	difficulty = newDiff;
+	window.localStorage.setItem('breakDifficulty', newDiff);	
+	difficultyField.innerHTML = "Difficulty: " + newDiff + "/5";
 }

@@ -19,7 +19,13 @@ const heightCount = Math.floor(screenHeight / blockWidth);
 
 
 const timestep = 1000 / 60;
-const startSpeed = blockWidth*2;
+const startSpeed = {
+	1: blockWidth/3,
+	2: blockWidth/1.5,
+	3: blockWidth,
+	4: blockWidth*2,
+	5: blockWidth*4,
+}
 let offset;
 let lastFrameTimeMs;
 let downSpeed;
@@ -33,13 +39,14 @@ const blocks = [];
 
 loadHighScore();
 loadPlayerName();
+loadDifficulty();
 startGame();
 
 function startGame() {
   blocks.length = 0;
   offset = 0;
   lastFrameTimeMs = new Date().getTime();
-  downSpeed = startSpeed; // Pixels/sec
+  downSpeed = startSpeed[difficulty]; // Pixels/sec
   delta = 0;
   gameOver = false;
   score = 0;
@@ -169,8 +176,8 @@ function checkForFullRows() {
       clearRow(b.y);
       bumpRows(b.y + 1);
       checkForFullRows();
-      downSpeed*=1.01;
-      score = Math.floor((downSpeed - startSpeed)*10);
+      downSpeed += startSpeed[difficulty] * 0.04;
+      score += Math.floor(startSpeed[difficulty] * 0.4 * Math.sqrt(Math.sqrt(difficulty)));
       return;
     }
   }
@@ -244,5 +251,14 @@ function postScore() {
     	xhr = new XMLHttpRequest();
     	xhr.open('GET', 'https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZwaU6NpjZIdh41PPbayMD8rjP/exec' + "?name="+playerName+"&score="+score, true);
 		xhr.send();
+	}
+}
+
+function loadDifficulty() {
+	var diff = window.localStorage.getItem('breakDifficulty');
+	if (diff != null) {
+		difficulty = diff;
+	} else {
+		difficulty = 3;
 	}
 }
