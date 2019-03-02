@@ -1,264 +1,280 @@
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d')
-const scoreField = document.getElementById('score');
-const highScoreField = document.getElementById('highScore');
-
-canvas.width = document.body.clientWidth;
-canvas.height = document.body.clientHeight;
-
-canvas.addEventListener("touchstart", handleTouch, false);
-canvas.addEventListener("mousedown", handleMouseClick, false);
-
-ctx.fillStyle = '#96A537';
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-const screenWidth = window.innerWidth;
-const screenHeight = window.innerHeight;
-const blockCount = 5;
-const blockWidth = screenWidth / blockCount;
-const heightCount = Math.floor(screenHeight / blockWidth);
-
-
-const timestep = 1000 / 60;
-const startSpeed = {
-	1: blockWidth/3,
-	2: blockWidth/1.5,
-	3: blockWidth,
-	4: blockWidth*2,
-	5: blockWidth*4,
-}
-let offset;
-let lastFrameTimeMs;
-let downSpeed;
-let delta = 0;
-let score;
-let highScore;
-let gameOver = false;
-let tapToRestart;
-
-const blocks = [];
-
-loadHighScore();
-loadPlayerName();
-loadDifficulty();
-startGame();
-
-function startGame() {
-  blocks.length = 0;
-  offset = 0;
-  lastFrameTimeMs = new Date().getTime();
-  downSpeed = startSpeed[difficulty]; // Pixels/sec
-  delta = 0;
-  gameOver = false;
-  score = 0;
-  tapToRestart = false;
-  mainLoop();
-}
-
-function mainLoop() {
-	let timestamp = new Date().getTime();
-	delta += timestamp - lastFrameTimeMs;
-	lastFrameTimeMs = timestamp;
-	while (delta >= timestep) {
-		update(timestep, blocks);
-		delta -= timestep;
+class Dom {
+	constructor() {
+		this.ctx = canvas.getContext('2d')
+		this.scoreField = document.getElementById('score');
+		this.highScoreField = document.getElementById('highScore');
+		this.init();
 	}
-  if (gameOver) {
-    return;
-  }
-	drawBlocks(blocks, offset);
-  scoreField.innerHTML = "Score: " + score;
-  highScoreField.innerHTML = "High score: " + highScore;
-	requestAnimationFrame(mainLoop);
-}
 
-function update(delta, blocks) {
-	offset += delta * downSpeed / 1000;
-	while (offset > blockWidth) {
-		offset -= blockWidth;
-		bumpBlocks(blocks);
-		spawnNewRow();
+	init() {
+		canvas.width = document.body.clientWidth;
+		canvas.height = document.body.clientHeight;
+		this.ctx.fillStyle = '#96A537';
+		this.ctx.fillRect(0, 0, canvas.width, canvas.height);
 	}
-}
 
-function findMaxY(x){
-	let maxY = -1;
-	for (let b of blocks) {
-		if (b.x == x && b.y > maxY) {
-			maxY = b.y;
+	drawScore(score) {
+  		this.scoreField.innerHTML = "Score: " + score;
+	}
+
+	drawHighscore(highscore) {
+  		this.highScoreField.innerHTML = "High score: " + highscore;
+	}
+
+	drawSplash(score, tapToRestart) {
+		this.ctx.font = "50px Arial";
+		this.ctx.fillStyle = '#ECF8A5';
+		this.ctx.textAlign = "center";
+		this.ctx.fillText("Game Over", canvas.width/2, canvas.height/2 - 60);
+		this.ctx.fillText("Score: " + score, canvas.width/2, canvas.height/2);
+		if (tapToRestart) {
+			this.ctx.font = "30px Arial";
+			this.ctx.fillText("Tap to restart", canvas.width/2, canvas.height/2 + 60);
 		}
 	}
-	return maxY;
-}
 
-function bumpBlocks(blocks) {
-	for (let b of blocks) {
-		b.y += 1;
-		if (b.y > heightCount) {
-			gameOver = true;
+	drawBlocks(blocks, offset, blockWidth) {
+		this.ctx.fillStyle = '#96A537';
+		this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+		this.ctx.fillStyle = '#475300';
+		for (let b of blocks) {
+			this.ctx.fillRect(b.x * blockWidth, (b.y - 1)*blockWidth + offset, blockWidth, blockWidth);
 		}
 	}
-	if (gameOver) {
-  	maybeSaveHighScore();
-  	displaySplash();
-  	delay(500).then(() => {tapToRestart = true; displaySplash();});
+}
+
+class Game {
+	constructor(dom) {
+		this.dom = dom;
+		this.blocks = [];
+		this.screenWidth = window.innerWidth;
+		this.screenHeight = window.innerHeight;
+		this.blockCount = 5;
+		this.blockWidth = this.screenWidth / this.blockCount;
+		this.heightCount = Math.floor(this.screenHeight / this.blockWidth);
+		this.timestep = 1000 / 60;
+		this.startSpeed = {
+			1: this.blockWidth/3,
+			2: this.blockWidth/1.5,
+			3: this.blockWidth,
+			4: this.blockWidth*2,
+			5: this.blockWidth*4,
+		}
+		canvas.addEventListener("touchstart", this.handleTouch.bind(this), false);
+		canvas.addEventListener("mousedown", this.handleMouseClick.bind(this), false);
+		this.loadDifficulty();
+		this.loadHighScore();
+	}
+
+	loadDifficulty() {
+		var diff = window.localStorage.getItem('breakDifficulty');
+		if (diff != null) {
+			this.difficulty = diff;
+		} else {
+			this.difficulty = 3;
+		}
+	}
+
+	loadHighScore() {
+		var hs = window.localStorage.getItem('breakHighScore');
+		if (hs != null) {
+			this.highScore = hs;
+		} else {
+	    	this.highScore = 0;
+		}
+	}
+
+	startGame() {
+		this.blocks.length = 0;
+		this.offset = 0;
+		this.lastFrameTimeMs = new Date().getTime();
+		this.downSpeed = this.startSpeed[this.difficulty]; // Pixels/sec
+		this.remainingTimeDelta = 0;
+		this.gameOver = false;
+		this.score = 0;
+		this.tapToRestart = false;
+		this.mainLoop();
+	}
+
+	mainLoop() {
+		let timestamp = new Date().getTime();
+		this.remainingTimeDelta += timestamp - this.lastFrameTimeMs;
+		this.lastFrameTimeMs = timestamp;
+		while (this.remainingTimeDelta >= this.timestep) {
+			this.update();
+			this.remainingTimeDelta -= this.timestep;
+		}
+		if (this.gameOver) {
+			return;
+		}
+		dom.drawBlocks(this.blocks, this.offset, this.blockWidth);
+	  	dom.drawScore(this.score);
+	  	dom.drawHighscore(this.highScore);
+		requestAnimationFrame(this.mainLoop.bind(this));
+	}
+
+	update() {
+		this.offset += this.timestep * this.downSpeed / 1000;
+		while (this.offset > this.blockWidth) {
+			this.offset -= this.blockWidth;
+			this.bumpBlocks();
+			this.spawnNewRow();
+		}
+	}
+
+	spawnNewRow() {
+		const allY = [];
+		for (let i=0; i<this.blockCount; i++) {
+			allY.push(i);
+		}
+		this.shuffle(allY);
+		for(let i=0; i<3; i++) {
+			this.blocks.push({x: allY.pop(), y: 0});
+		}
+	}
+
+	shuffle(a) {
+	    var j, x, i;
+	    for (i = a.length - 1; i > 0; i--) {
+			j = Math.floor(Math.random() * (i + 1));
+			x = a[i];
+			a[i] = a[j];
+			a[j] = x;
+	    }
+	    return a;
+	}
+
+	bumpBlocks() {
+		let failed = false;
+		for (let b of this.blocks) {
+			b.y += 1;
+			if (b.y > this.heightCount) {
+				failed = true;
+			}
+		}
+		if (failed) {
+			this.endGame();
+		}
+	}
+
+	endGame() {
+		this.gameOver = true;
+	  	this.maybeSaveHighScore();
+		this.postScore();
+	  	dom.drawSplash(this.score);
+	  	this.delay(500).then(() => {
+	  		this.tapToRestart = true; 
+	  		dom.drawSplash(this.score, this.tapToRestart);
+	  	});
+	}
+
+	delay(delay) {
+		return new Promise(resolve => setTimeout(resolve, delay));
+	}
+
+	maybeSaveHighScore() {
+		var hs = window.localStorage.getItem('breakHighScore');
+		if (hs == null || this.score > hs) {
+			this.highScore = this.score;
+			window.localStorage.setItem('breakHighScore', this.highScore);
+		}
+	}
+
+	postScore() {
+		const playerName = this.loadPlayerName();
+		if (playerName && this.score > 0) {
+	    	xhr = new XMLHttpRequest();
+	    	xhr.open('GET', 'https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZwaU6NpjZIdh41PPbayMD8rjP/exec' + "?name="+playerName+"&score="+score, true);
+			xhr.send();
+		}
+	}
+
+	loadPlayerName() {
+		let pn = window.localStorage.getItem('breakPlayerName');
+		if (pn != null) {
+			return pn;
+		} else {
+			pn = prompt("Please enter your name");
+			if (pn != null) {
+				window.localStorage.setItem('breakPlayerName', pn);
+			}
+			return pn;
+		}
+		return "";
+	}
+
+	handleTouch(evt) {
+		evt.preventDefault();
+		var touches = evt.changedTouches;
+		for (var i = 0; i < touches.length; i++) {
+			this.handleClick(touches[i].pageX);
+		}
+	}
+
+	handleMouseClick(evt) {
+		evt.preventDefault();
+		this.handleClick(evt.x);	
+	}
+
+	handleClick(x) {
+		if (!this.gameOver) {
+			const col = Math.floor(x/this.blockWidth);
+			const row = this.findMaxY(col);
+			this.blocks.push({x: col, y: row+1});
+			this.checkForFullRows();
+		}
+		if (this.tapToRestart) {
+			this.startGame();
+		}
+	}
+
+	findMaxY(col){
+		let maxY = -1;
+		for (let b of this.blocks) {
+			if (b.x == col && b.y > maxY) {
+				maxY = b.y;
+			}
+		}
+		return maxY;
+	}
+
+	checkForFullRows() {
+		const rowCount = {};
+		for(let b of this.blocks) {
+			if (rowCount[b.y]) {
+				rowCount[b.y]++;
+			} else {
+				rowCount[b.y] = 1;
+			}
+			if(rowCount[b.y] == this.blockCount) {
+				this.clearRow(b.y);
+				this.bumpRows(b.y + 1);
+				this.checkForFullRows();
+				const startSpeed = this.startSpeed[this.difficulty];
+				this.downSpeed += startSpeed * 0.04;
+				this.score += Math.floor(startSpeed * 0.4 * Math.sqrt(Math.sqrt(this.difficulty)));
+				return;
+			}
+	  	}
+	}
+
+	clearRow(y) {
+		for (let i = this.blocks.length-1; i>=0; i--) {
+			if (this.blocks[i].y == y) {
+				this.blocks.splice(i, 1);
+			}
+		}
+	}
+
+	bumpRows(y) {
+		for (let b of this.blocks) {
+			if (b.y >= y) {
+				b.y --;
+			}
+		}
 	}
 }
 
-function displaySplash() {
-  ctx.font = "50px Arial";
-  ctx.fillStyle = '#ECF8A5';
-  ctx.textAlign = "center";
-  ctx.fillText("Game Over", canvas.width/2, canvas.height/2 - 60);
-  ctx.fillText("Score: " + score, canvas.width/2, canvas.height/2);
-  if (tapToRestart) {
-  ctx.font = "30px Arial";
-    ctx.fillText("Tap to restart", canvas.width/2, canvas.height/2 + 60);
-  }
-}
-
-function delay(delay) {
-  return new Promise(resolve => setTimeout(resolve, delay));
-}
-
-function spawnNewRow() {
-  const allY = [0, 1, 2, 3, 4];
-  shuffle(allY);
-  for(let i=0; i<3; i++) {
-    blocks.push({x: allY.pop(), y: 0});
-  }
-}
-
-function drawBlocks(blocks, offset) {
-	ctx.fillStyle = '#96A537';
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-	ctx.fillStyle = '#475300';
-	for (let b of blocks) {
-		ctx.fillRect(b.x * blockWidth, (b.y - 1)*blockWidth + offset, blockWidth, blockWidth);
-	}
-}
-
-function handleTouch(evt) {
-  	evt.preventDefault();
-	var touches = evt.changedTouches;
-    for (var i = 0; i < touches.length; i++) {
-    	handleClick(touches[i].pageX);
-  	}
-}
-
-function handleMouseClick(evt) {
-  evt.preventDefault();
-  handleClick(evt.x);	
-}
-
-function handleClick(x) {
-	if (!gameOver) {
-		const col = columnFromCoordinate(x);
-		const y = findMaxY(col);
-		blocks.push({x: col, y: y+1});
-		checkForFullRows();
-	}
-	if (tapToRestart) {
-		startGame();
-	}
-
-}
-
-function checkForFullRows() {
-  const rowCount = {};
-  for(let b of blocks) {
-    if (rowCount[b.y]) {
-      rowCount[b.y]++;
-    } else {
-      rowCount[b.y] = 1;
-    }
-    if(rowCount[b.y] == blockCount) {
-      clearRow(b.y);
-      bumpRows(b.y + 1);
-      checkForFullRows();
-      downSpeed += startSpeed[difficulty] * 0.04;
-      score += Math.floor(startSpeed[difficulty] * 0.4 * Math.sqrt(Math.sqrt(difficulty)));
-      return;
-    }
-  }
-}
-
-function clearRow(y) {
-  for (let i = blocks.length-1; i>=0; i--) {
-    if (blocks[i].y == y) {
-      blocks.splice(i, 1);
-    }
-  }
-}
-
-function bumpRows(y) {
-  for (let b of blocks) {
-    if (b.y >= y) {
-      b.y --;
-    }
-  }
-}
-
-function columnFromCoordinate(x) {
-  return Math.floor(x/blockWidth);
-}
-
-/**
- * Shuffles array in place.
- * @param {Array} a items An array containing the items.
- */
-function shuffle(a) {
-    var j, x, i;
-    for (i = a.length - 1; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
-        x = a[i];
-        a[i] = a[j];
-        a[j] = x;
-    }
-    return a;
-}
-
-function loadHighScore() {
-  var hs = window.localStorage.getItem('breakHighScore');
-  if (hs != null) {
-    highScore = hs;
-  } else {
-    highScore = 0;
-  }
-}
-
-function loadPlayerName() {
-	var pn = window.localStorage.getItem('breakPlayerName');
-	if (pn != null) {
-		playerName = pn;
-	} else {
-		playerName = prompt("Please enter your name");
-		window.localStorage.setItem('breakPlayerName', playerName);
-	}
-}
-
-function maybeSaveHighScore() {
-  var hs = window.localStorage.getItem('breakHighScore');
-  if (hs == null || score > hs) {
-    highScore = score;
-    window.localStorage.setItem('breakHighScore', highScore);
-  }
-  postScore();
-}
-
-function postScore() {
-	if (playerName && score > 0) {
-    	xhr = new XMLHttpRequest();
-    	xhr.open('GET', 'https://script.google.com/macros/s/AKfycbyJlneAMacRR-dwM5E4Rpalm-OZwaU6NpjZIdh41PPbayMD8rjP/exec' + "?name="+playerName+"&score="+score, true);
-		xhr.send();
-	}
-}
-
-function loadDifficulty() {
-	var diff = window.localStorage.getItem('breakDifficulty');
-	if (diff != null) {
-		difficulty = diff;
-	} else {
-		difficulty = 3;
-	}
-}
+const dom = new Dom();
+const game = new Game(dom);
+game.startGame();
