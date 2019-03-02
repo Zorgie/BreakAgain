@@ -52,7 +52,7 @@ function changeName() {
 
 function loadDifficulty() {
 	var diff = parseInt(window.localStorage.getItem('breakDifficulty'), 10);
-	if (diff != null) {
+	if (!isNaN(diff)) {
 		difficulty = diff;
 	} else {
 		difficulty = 3;
