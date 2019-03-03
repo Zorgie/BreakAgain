@@ -47,6 +47,7 @@ class Game {
 	constructor(dom) {
 		this.dom = dom;
 		this.blocks = [];
+		this.nextBlocks = [];
 		this.screenWidth = window.innerWidth;
 		this.screenHeight = window.innerHeight;
 		this.blockCount = 5;
@@ -123,13 +124,17 @@ class Game {
 	}
 
 	spawnNewRow() {
-		const allY = [];
+		if (this.nextBlocks.length < 2)
 		for (let i=0; i<this.blockCount; i++) {
-			allY.push(i);
+			this.nextBlocks.push(i);
 		}
-		this.shuffle(allY);
-		for(let i=0; i<3; i++) {
-			this.blocks.push({x: allY.pop(), y: 0});
+		this.shuffle(this.nextBlocks);
+		const hole1 = this.nextBlocks.pop();
+		const hole2 = this.nextBlocks.pop();
+		for(let i=0; i<this.blockCount; i++) {
+		  if (i != hole1 && i != hole2) {
+			  this.blocks.push({x: i, y: 0});
+		  }
 		}
 	}
 
@@ -163,7 +168,7 @@ class Game {
 		this.postScore();
 	  	dom.drawSplash(this.score);
 	  	this.delay(500).then(() => {
-	  		this.tapToRestart = true; 
+	  		this.tapToRestart = true;
 	  		dom.drawSplash(this.score, this.tapToRestart);
 	  	});
 	}
@@ -213,7 +218,7 @@ class Game {
 
 	handleMouseClick(evt) {
 		evt.preventDefault();
-		this.handleClick(evt.x);	
+		this.handleClick(evt.x);
 	}
 
 	handleClick(x) {
