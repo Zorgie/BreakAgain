@@ -252,7 +252,8 @@ class Game {
 				this.checkForFullRows();
 				const startSpeed = this.startSpeed[this.difficulty];
 				this.downSpeed += startSpeed * 0.04;
-				this.score += Math.floor(startSpeed * 0.4 * Math.sqrt(Math.sqrt(this.difficulty)));
+				const startSpeedInBlocks = startSpeed / this.blockWidth;
+				this.score += Math.floor(startSpeedInBlocks * 200 * 0.4 * Math.sqrt(Math.sqrt(this.difficulty)));
 				return;
 			}
 	  	}
